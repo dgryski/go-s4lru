@@ -1,0 +1,3 @@
+s4lru -- an implementation of Quadruply-segmented LRU cache
+
+Godoc: http://godoc.org/github.com/dgryski/go-s4lru
