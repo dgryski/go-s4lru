@@ -58,22 +58,35 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	// already on final list?
 	if item.lidx == len(c.lists)-1 {
 		c.lists[item.lidx].MoveToFront(v)
-	} else {
-		// move to head of next list
-		c.lists[item.lidx].Remove(v)
-		delete(c.data, key)
-		item.lidx++
-
-		// next list is full, so move the last element of that one to the front of this list
-		if c.lists[item.lidx].Len() == c.capacity {
-			back := c.lists[item.lidx].Back()
-			old := c.lists[item.lidx].Remove(back).(*cacheItem)
-			old.lidx--
-			c.data[old.key] = c.lists[old.lidx].PushFront(old)
-		}
-
-		c.data[key] = c.lists[item.lidx].PushFront(item)
+		return item.value, true
 	}
+
+	// is there space on the next list?
+	if c.lists[item.lidx+1].Len() < c.capacity {
+		// just do the remove/add
+		c.lists[item.lidx].Remove(v)
+		item.lidx++
+		c.data[key] = c.lists[item.lidx].PushFront(item)
+		return item.value, true
+	}
+
+	// no free space on either list, so we do some in-place swapping to avoid allocations
+	// the key/value in bitem need to be moved to the front of c.lists[item.lidx]
+	// the key/value in item need to be moved to the front of c.lists[bitem.lidx]
+	back := c.lists[item.lidx+1].Back()
+	bitem := back.Value.(*cacheItem)
+
+	// swap the key/values
+	bitem.key, item.key = item.key, bitem.key
+	bitem.value, item.value = item.value, bitem.value
+
+	// update pointers in the map
+	c.data[item.key] = v
+	c.data[bitem.key] = back
+
+	// move the elements to the front of their lists
+	c.lists[item.lidx].MoveToFront(v)
+	c.lists[bitem.lidx].MoveToFront(back)
 
 	return item.value, true
 }
@@ -83,11 +96,20 @@ func (c *Cache) Set(key string, value interface{}) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	if c.lists[0].Len() == c.capacity {
-		delete(c.data, c.lists[0].Back().Value.(*cacheItem).key)
-		c.lists[0].Remove(c.lists[0].Back())
+	if c.lists[0].Len() < c.capacity {
+		c.data[key] = c.lists[0].PushFront(&cacheItem{0, key, value})
+		return
 	}
-	c.data[key] = c.lists[0].PushFront(&cacheItem{0, key, value})
+
+	// reuse the tail item
+	e := c.lists[0].Back()
+	item := e.Value.(*cacheItem)
+
+	delete(c.data, item.key)
+	item.key = key
+	item.value = value
+	c.data[key] = e
+	c.lists[0].MoveToFront(e)
 }
 
 // Len returns the total number of items in the cache
