@@ -120,5 +120,7 @@ func (c *Cache) Remove(key string) (interface{}, bool) {
 
 	c.lists[item.lidx].Remove(v)
 
+	delete(c.data, key)
+
 	return item.value, true
 }
