@@ -92,16 +92,9 @@ func (c *Cache) Set(key string, value interface{}) {
 
 // Len returns the total number of items in the cache
 func (c *Cache) Len() int {
-
 	c.mu.Lock()
 	defer c.mu.Unlock()
-
-	var ln int
-	for _, l := range c.lists {
-		ln += l.Len()
-	}
-
-	return ln
+	return len(c.data)
 }
 
 // Remove removes an item from the cache, returning the item and a boolean indicating if it was found
