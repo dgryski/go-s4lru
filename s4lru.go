@@ -14,10 +14,7 @@ From http://www.cs.cornell.edu/~qhuang/papers/sosp_fbanalysis.pdf
 */
 package s4lru
 
-import (
-	"container/list"
-	"sync"
-)
+import "container/list"
 
 type cacheItem struct {
 	lidx  int
@@ -25,9 +22,8 @@ type cacheItem struct {
 	value interface{}
 }
 
-// Cache is an LRU cache
+// Cache is an LRU cache.  It is not safe for concurrent access.
 type Cache struct {
-	mu       sync.Mutex
 	capacity int
 	data     map[string]*list.Element
 	lists    []*list.List
@@ -44,9 +40,6 @@ func New(capacity int) *Cache {
 
 // Get returns a value from the cache
 func (c *Cache) Get(key string) (interface{}, bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	v, ok := c.data[key]
 
 	if !ok {
@@ -93,9 +86,6 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 
 // Set sets a value in the cache
 func (c *Cache) Set(key string, value interface{}) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if c.lists[0].Len() < c.capacity {
 		c.data[key] = c.lists[0].PushFront(&cacheItem{0, key, value})
 		return
@@ -114,17 +104,11 @@ func (c *Cache) Set(key string, value interface{}) {
 
 // Len returns the total number of items in the cache
 func (c *Cache) Len() int {
-	c.mu.Lock()
-	defer c.mu.Unlock()
 	return len(c.data)
 }
 
 // Remove removes an item from the cache, returning the item and a boolean indicating if it was found
 func (c *Cache) Remove(key string) (interface{}, bool) {
-
-	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	v, ok := c.data[key]
 
 	if !ok {
