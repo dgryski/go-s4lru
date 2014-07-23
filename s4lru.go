@@ -29,8 +29,13 @@ type Cache struct {
 	lists    []*list.List
 }
 
-// New returns a new S4LRU cache that with the given capacity.  Each of the lists will have 1/4 of the capacity.
+// New returns a new S4LRU cache that with the given capacity.  Each of the
+// lists will have 1/4 of the capacity.  New will panic if the capacity is not
+// evenly divisible by 4.
 func New(capacity int) *Cache {
+	if capacity%4 != 0 {
+		panic("s4lru: capacity not evenly divisible by 4")
+	}
 	return &Cache{
 		capacity: capacity / 4,
 		data:     make(map[string]*list.Element),
