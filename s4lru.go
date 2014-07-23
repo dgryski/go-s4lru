@@ -88,7 +88,7 @@ func (c *Cache) Get(key string) (interface{}, bool) {
 	c.lists[item.lidx].MoveToFront(v)
 	c.lists[bitem.lidx].MoveToFront(back)
 
-	return item.value, true
+	return bitem.value, true
 }
 
 // Set sets a value in the cache
