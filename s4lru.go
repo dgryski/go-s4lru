@@ -1,3 +1,6 @@
+// Copyright (c) 2014 Damian Gryski <damian@gryski.com>
+// Licensed under the MIT License
+
 // Package s4lru implements the 4-segmented LRU caching algorithm
 /*
 
@@ -10,7 +13,6 @@ From http://www.cs.cornell.edu/~qhuang/papers/sosp_fbanalysis.pdf
     evicted from the tail of a queue to the head of the next lower queue to
     maintain the size invariants. Items evicted from queue 0 are evicted from
     the cache
-
 */
 package s4lru
 
